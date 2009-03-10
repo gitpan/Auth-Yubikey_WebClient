@@ -8,15 +8,15 @@ use LWP::Simple;
 
 =head1 NAME
 
-Auth::Yubikey_WebClient - The great new Auth::Yubikey_WebClient!
+Auth::Yubikey_WebClient - Authenticating the Yubikey against the Yubico Web API
 
 =head1 VERSION
 
-Version 0.01
+Version 0.02
 
 =cut
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 =head1 SYNOPSIS
 
