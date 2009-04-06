@@ -3,7 +3,7 @@ package Auth::Yubikey_WebClient;
 use warnings;
 use strict;
 use MIME::Base64;
-use Digest::SHA qw(hmac_sha1);
+use Digest::HMAC_SHA1 qw(hmac_sha1 hmac_sha1_hex);
 use LWP::Simple;
 
 =head1 NAME
@@ -12,11 +12,11 @@ Auth::Yubikey_WebClient - Authenticating the Yubikey against the Yubico Web API
 
 =head1 VERSION
 
-Version 0.02
+Version 0.03
 
 =cut
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 =head1 SYNOPSIS
 
@@ -65,7 +65,8 @@ sub yubikey_webclient
 	if($response !~ /status=ok/i)
 	{
 		# If the status is not ok, let's not even go through the rest...
-		return "ERR";
+		$response =~ m/status=(.+)/;
+		return "ERR_$1";
 	}
 
 	#extract each of the lines, and store in a hash...
@@ -97,6 +98,7 @@ sub yubikey_webclient
         $datastring = substr($datastring,0,length($datastring)-1);
 
         my $hmac = encode_base64(hmac_sha1($datastring,decode_base64($api)));
+
         chomp($hmac);
 
         if($hmac eq $signatur)
@@ -105,7 +107,7 @@ sub yubikey_webclient
         }
         else
         {
-                return "ERR";
+                return "ERR_HMAC";
         }
 }
 
