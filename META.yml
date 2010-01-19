@@ -1,14 +1,17 @@
-# http://module-build.sourceforge.net/META-spec.html
-#XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
-name:         Auth-Yubikey_WebClient
-version:      0.03
-version_from: lib/Auth/Yubikey_WebClient.pm
-installdirs:  site
-requires:
-    Digest::SHA:                   1
+--- #YAML:1.0
+name:                Auth-Yubikey_WebClient
+version:             0.04
+abstract:            Authenticating the Yubikey against the Yubico Web API
+license:             ~
+author:              
+    - Phil Massyn <phil@massyn.net>
+generated_by:        ExtUtils::MakeMaker version 6.42
+distribution_type:   module
+requires:     
+    Digest::SHA1:                  1
     LWP::Simple:                   1
     MIME::Base64:                  1
     Test::More:                    0
-
-distribution_type: module
-generated_by: ExtUtils::MakeMaker version 6.30_01
+meta-spec:
+    url:     http://module-build.sourceforge.net/META-spec-v1.3.html
+    version: 1.3

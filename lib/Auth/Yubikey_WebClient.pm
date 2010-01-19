@@ -12,11 +12,11 @@ Auth::Yubikey_WebClient - Authenticating the Yubikey against the Yubico Web API
 
 =head1 VERSION
 
-Version 0.03
+Version 0.04
 
 =cut
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 =head1 SYNOPSIS
 
@@ -157,13 +157,16 @@ L<http://search.cpan.org/dist/Auth-Yubikey_WebClient>
 
 =back
 
+=head1 Version history
+
+0.04 - Fixed bug L<http://rt.cpan.org/Public/Bug/Display.html?id=51121>
 
 =head1 ACKNOWLEDGEMENTS
 
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2009 Phil Massyn, all rights reserved.
+Copyright 2010 Phil Massyn, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
