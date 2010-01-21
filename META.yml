@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:                Auth-Yubikey_WebClient
-version:             0.04
+version:             0.05
 abstract:            Authenticating the Yubikey against the Yubico Web API
 license:             ~
 author:              
@@ -8,7 +8,7 @@ author:
 generated_by:        ExtUtils::MakeMaker version 6.42
 distribution_type:   module
 requires:     
-    Digest::SHA1:                  1
+    Digest::HMAC_SHA1:             1
     LWP::Simple:                   1
     MIME::Base64:                  1
     Test::More:                    0

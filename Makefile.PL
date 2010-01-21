@@ -12,7 +12,7 @@ WriteMakefile(
         'Test::More' => 0,
 	'LWP::Simple' => 1,
 	'MIME::Base64' => 1,
-	'Digest::SHA1' => 1
+	'Digest::HMAC_SHA1' => 1
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'Auth-Yubikey_WebClient-*' },
