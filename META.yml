@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:                Auth-Yubikey_WebClient
-version:             1.00
+version:             1.01
 abstract:            Authenticating the Yubikey against the Yubico Web API
 license:             ~
 author:              
@@ -12,6 +12,7 @@ requires:
     LWP::Simple:                   1
     MIME::Base64:                  1
     Test::More:                    0
+    URI::Escape:                   1
 meta-spec:
     url:     http://module-build.sourceforge.net/META-spec-v1.3.html
     version: 1.3

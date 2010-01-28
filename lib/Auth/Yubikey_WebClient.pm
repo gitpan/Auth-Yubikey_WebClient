@@ -5,6 +5,7 @@ use strict;
 use MIME::Base64;
 use Digest::HMAC_SHA1 qw(hmac_sha1 hmac_sha1_hex);
 use LWP::Simple;
+use URI::Escape;
 
 =head1 NAME
 
@@ -12,11 +13,11 @@ Auth::Yubikey_WebClient - Authenticating the Yubikey against the Yubico Web API
 
 =head1 VERSION
 
-Version 1.00
+Version 1.01
 
 =cut
 
-our $VERSION = '1.00';
+our $VERSION = '1.01';
 
 =head1 SYNOPSIS
 
@@ -60,8 +61,9 @@ sub yubikey_webclient
 {
 	my ($otp,$id,$api) = @_;
 
-	my $params = "id=$id&otp=$otp&timestamp=1";
-	$params .= '&h=' . encode_base64(hmac_sha1($params, decode_base64($api)), '');
+	my $params = "id=$id&otp=" . uri_escape($otp) . '&timestamp=1';
+	$params .= '&h=' . uri_escape(encode_base64(hmac_sha1($params, decode_base64($api)), ''));
+
 	my $response = get("http://api.yubico.com/wsapi/verify?$params");
 
 	chomp($response);
