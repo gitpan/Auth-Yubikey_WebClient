@@ -12,11 +12,11 @@ Auth::Yubikey_WebClient - Authenticating the Yubikey against the Yubico Web API
 
 =head1 VERSION
 
-Version 0.05
+Version 1.00
 
 =cut
 
-our $VERSION = '0.05';
+our $VERSION = '1.00';
 
 =head1 SYNOPSIS
 
@@ -60,7 +60,10 @@ sub yubikey_webclient
 {
 	my ($otp,$id,$api) = @_;
 
-	my $response = get("http://api.yubico.com/wsapi/verify?id=$id&otp=$otp");
+	my $params = "id=$id&otp=$otp&timestamp=1";
+	$params .= '&h=' . encode_base64(hmac_sha1($params, decode_base64($api)), '');
+	my $response = get("http://api.yubico.com/wsapi/verify?$params");
+
 	chomp($response);
 	if($response !~ /status=ok/i)
 	{
@@ -160,9 +163,9 @@ L<http://search.cpan.org/dist/Auth-Yubikey_WebClient>
 =head1 Version history
 
 0.04 - Fixed bug L<http://rt.cpan.org/Public/Bug/Display.html?id=51121>
+1.00 - Added validation of the request to Yubico (Thanks to Kirill Miazine)
 
 =head1 ACKNOWLEDGEMENTS
-
 
 =head1 COPYRIGHT & LICENSE
 
