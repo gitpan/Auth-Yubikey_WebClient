@@ -13,11 +13,11 @@ Auth::Yubikey_WebClient - Authenticating the Yubikey against the Yubico Web API
 
 =head1 VERSION
 
-Version 1.01
+Version 2.00
 
 =cut
 
-our $VERSION = '1.01';
+our $VERSION = '2.00';
 
 =head1 SYNOPSIS
 
@@ -39,10 +39,11 @@ Sample CGI script :-
 
 	$id = "<enter your id here>";
 	$api = "<enter your API key here>";
+	$nonce = "<enter your nonce here>";
 
 	if($otp)
 	{
-        	$result = Auth::Yubikey_WebClient::yubikey_webclient($otp,$id,$api);
+        	$result = Auth::Yubikey_WebClient::yubikey_webclient($otp,$id,$api,$nonce);
 		# result can be either ERR or OK
 
         	print "Authentication result : <b>$result</b><br>";
@@ -59,12 +60,15 @@ Sample CGI script :-
 
 sub yubikey_webclient
 {
-	my ($otp,$id,$api) = @_;
+	my ($otp,$id,$api,$nonce) = @_;
 
-	my $params = "id=$id&otp=" . uri_escape($otp) . '&timestamp=1';
+	# Generate nonce unless passed 
+	$nonce = hmac_sha1_hex(time, rand()) unless $nonce;
+
+	my $params = "id=$id&nonce=$nonce&otp=" . uri_escape($otp) . '&timestamp=1';
 	$params .= '&h=' . uri_escape(encode_base64(hmac_sha1($params, decode_base64($api)), ''));
 
-	my $response = get("http://api.yubico.com/wsapi/verify?$params");
+	my $response = get("http://api2.yubico.com/wsapi/2.0/verify?$params");
 
 	chomp($response);
 	if($response !~ /status=ok/i)
@@ -94,13 +98,16 @@ sub yubikey_webclient
         delete $result{h};
         my $datastring='';
 
-	my $key;
+				my $key;
         foreach $key (sort keys %result)
         {
                 $result{$key} =~ s/\s//g;
                 $datastring .= "$key=$result{$key}&";
         }
         $datastring = substr($datastring,0,length($datastring)-1);
+
+				# Check that nonce and OTP are the ones we asked for
+				return "ERR_MSG_AUTH" unless ($nonce eq $result{nonce} and $otp eq $result{otp});
 
         my $hmac = encode_base64(hmac_sha1($datastring,decode_base64($api)));
 
@@ -166,6 +173,7 @@ L<http://search.cpan.org/dist/Auth-Yubikey_WebClient>
 
 0.04 - Fixed bug L<http://rt.cpan.org/Public/Bug/Display.html?id=51121>
 1.00 - Added validation of the request to Yubico (Thanks to Kirill Miazine)
+2.00 - Added nounce coding (Thanks to Ludvig af Klinteberg)
 
 =head1 ACKNOWLEDGEMENTS
 
