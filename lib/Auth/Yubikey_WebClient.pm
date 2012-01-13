@@ -17,7 +17,7 @@ Version 2.00
 
 =cut
 
-our $VERSION = '2.00';
+our $VERSION = '2.01';
 
 =head1 SYNOPSIS
 
@@ -70,7 +70,10 @@ sub yubikey_webclient
 
 	my $response = get("http://api2.yubico.com/wsapi/2.0/verify?$params");
 
+	# sanitize the output in case we get some strange characters back	
+	$response =~ s/\s//g;
 	chomp($response);
+
 	if($response !~ /status=ok/i)
 	{
 		# If the status is not ok, let's not even go through the rest...
@@ -98,7 +101,7 @@ sub yubikey_webclient
         delete $result{h};
         my $datastring='';
 
-				my $key;
+	my $key;
         foreach $key (sort keys %result)
         {
                 $result{$key} =~ s/\s//g;
@@ -106,8 +109,8 @@ sub yubikey_webclient
         }
         $datastring = substr($datastring,0,length($datastring)-1);
 
-				# Check that nonce and OTP are the ones we asked for
-				return "ERR_MSG_AUTH" unless ($nonce eq $result{nonce} and $otp eq $result{otp});
+	# Check that nonce and OTP are the ones we asked for
+	return "ERR_MSG_AUTH" unless ($nonce eq $result{nonce} and $otp eq $result{otp});
 
         my $hmac = encode_base64(hmac_sha1($datastring,decode_base64($api)));
 
@@ -125,7 +128,7 @@ sub yubikey_webclient
 
 =head1 USAGE
 
-Before you can use this module, you need to register for an API key at Yubico.  This is as simple as logging onto <https://api.yubico.com/yms/getapi.php> and entering your Yubikey's OTP and a brief description.  Once you have the API and ID, you need to provide those details to the module to work.
+Before you can use this module, you need to register for an API key at Yubico.  This is as simple as logging onto <https://upgrade.yubico.com/getapikey/> and entering your Yubikey's OTP and a brief description.  Once you have the API and ID, you need to provide those details to the module to work.
 
 =head1 AUTHOR
 
@@ -174,6 +177,7 @@ L<http://search.cpan.org/dist/Auth-Yubikey_WebClient>
 0.04 - Fixed bug L<http://rt.cpan.org/Public/Bug/Display.html?id=51121>
 1.00 - Added validation of the request to Yubico (Thanks to Kirill Miazine)
 2.00 - Added nounce coding (Thanks to Ludvig af Klinteberg)
+2.01 - Response turning into an array due to \r bug (Thanks to Peter Norin)
 
 =head1 ACKNOWLEDGEMENTS
 
