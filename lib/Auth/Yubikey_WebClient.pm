@@ -13,11 +13,11 @@ Auth::Yubikey_WebClient - Authenticating the Yubikey against the Yubico Web API
 
 =head1 VERSION
 
-Version 2.00
+Version 3.00
 
 =cut
 
-our $VERSION = '2.01';
+our $VERSION = '3.00';
 
 =head1 SYNOPSIS
 
@@ -54,6 +54,107 @@ Sample CGI script :-
 
 =head1 FUNCTIONS
 
+=head2 new
+
+Creates a new Yubikey Webclient connection
+
+   use Auth::Yubikey_WebClient;
+
+   my $yubi = Auth::Yubikey_WebClient->new({
+        id => <enter your id here> ,
+        api => '<enter your API key here>' ,
+        nonce => '<enter your nonce if you have one>'
+        });
+
+You can overwrite the URL called if you want to call an alternate authentication server as well :-
+
+   use Auth::Yubikey_WebClient;
+
+   my $yubi = Auth::Yubikey_WebClient->new({
+        id => <enter your id here> ,
+        api => '<enter your API key here>' ,
+        nonce => '<enter your nonce if you have one>',
+	url => 'http://www.otherserver.com/webapi.php'
+        });
+
+=cut
+
+sub new
+{
+	my ($class,$options_ref) = @_;
+	my $self = {};
+
+	bless $self, ref $class || $class;
+       
+	if(! defined $options_ref)
+	{
+		die "You did not pass any parameters to the Yubikey Web Client initialization";
+	} 
+	my %options = %{$options_ref};
+
+	# grab the variables from the initialization
+	if(defined $options{id})
+	{
+        	$self->{id} = $options{id};
+	}
+	else
+	{
+		die "Can not start without a Yubikey ID";
+	}
+
+	if(defined $options{api})
+        {
+                $self->{api} = $options{api};
+
+		if(length($self->{api}) % 4 != 0)
+		{
+			die "Your API key must be in 4 byte lengths";
+		}
+        }
+        else
+        {
+                die "Can not start without a Yubikey API key";
+        }
+
+	$self->{nonce} = defined $options{nonce} ? $options{nonce} : '';
+
+	$self->{url} = defined $options{url} ? $options{url} : 'http://api2.yubico.com/wsapi/2.0/verify';
+
+	return $self;
+}
+
+=head2 debug
+
+Displays the debug info
+
+   $yubi->debug();
+
+Prints out some debug information.  Useful to be called after authentication to see what Yubico sent back.  You can also call the variables yourself, for example if you'd like to see what the token ID is, call $yubi->{publicid}.  The same goes for all the other variables printed in debug.
+
+=cut
+
+sub debug
+{
+	my ($self) = @_;
+
+	print "id             = $self->{id}\n";
+	print "api            = $self->{api}\n";
+	print "url            = $self->{url}\n";
+	print "nonce          = $self->{nonce}\n";
+	print "params         = $self->{params}\n";
+	print "status         = $self->{status}\n";
+	print "otp            = $self->{otp}\n";
+	print "publicid       = $self->{publicid}\n";
+	print "t              = $self->{t}\n";
+	print "sl             = $self->{sl}\n";
+	print "timestamp      = $self->{timestamp}\n";
+	print "sessioncounter = $self->{sessioncounter}\n";
+	print "sessionuse     = $self->{sessionuse}\n";	
+
+#	print "response = $self->{response}\n";
+	
+}
+
 =head2 yubikey_webclient
 
 =cut
@@ -62,29 +163,61 @@ sub yubikey_webclient
 {
 	my ($otp,$id,$api,$nonce) = @_;
 
+	my $yubi_tmp = new Auth::Yubikey_WebClient ( { id => $id, api => $api, nonce => $nonce } );
+
+	return $yubi_tmp->otp($otp);
+}
+
+=head2 otp
+
+Check a OTP for validity
+
+	$result = $yubi->otp($otp);
+
+Call the otp procedure with the input from the yubikey.  It will return the result.
+
+This function will also setup a few internal variables that was returned from Yubico.
+
+=cut
+
+sub otp
+{
+        my ($self,$otp) = @_;
+
+	chomp($otp);
+	$self->{otp} = $otp;
+
+	# lets do a basic sanity check on the otp, before we blast it off to yubico...
+	if($self->{otp} !~ /[cbdefghijklnrtuv]/i || length($self->{otp}) < 32)
+	{
+		$self->{status} = "ERR_BAD_OTP";
+		return $self->{status};	
+	}
+
 	# Generate nonce unless passed 
-	$nonce = hmac_sha1_hex(time, rand()) unless $nonce;
+	$self->{nonce} = hmac_sha1_hex(time, rand()) unless $self->{nonce};
 
-	my $params = "id=$id&nonce=$nonce&otp=" . uri_escape($otp) . '&timestamp=1';
-	$params .= '&h=' . uri_escape(encode_base64(hmac_sha1($params, decode_base64($api)), ''));
+	# Start generating the parameters
+	$self->{params} = "id=$self->{id}&nonce=$self->{nonce}&otp=" . uri_escape($self->{otp}) . "&timestamp=1";
+	$self->{params} .= '&h=' . uri_escape(encode_base64(hmac_sha1($self->{params}, decode_base64($self->{api})), ''));
 
-	my $response = get("http://api2.yubico.com/wsapi/2.0/verify?$params");
+	# pass the request to yubico
+	$self->{response} = get($self->{url} . "?$self->{params}");
+	chomp($self->{response});
 
-	# sanitize the output in case we get some strange characters back	
-	$response =~ s/\s//g;
-	chomp($response);
-
-	if($response !~ /status=ok/i)
+	if($self->{response} !~ /status=ok/i)
 	{
 		# If the status is not ok, let's not even go through the rest...
-		$response =~ m/status=(.+)/;
-		return "ERR_$1";
+		$self->{response} =~ m/status=(.+)/;
+		$self->{status} = "ERR_$1";
+		$self->{status} =~ s/\s//g;
+		return $self->{status};
 	}
 
 	#extract each of the lines, and store in a hash...
 
 	my %result;	
-	foreach (split(/\n/,$response))
+	foreach (split(/\n/,$self->{response}))
 	{
 		chomp;
                 if($_ =~ /=/)
@@ -92,6 +225,7 @@ sub yubikey_webclient
                         ($a,$b) = split(/=/,$_,2);
                         $b =~ s/\s//g;
                         $result{$a} = $b;
+			$self->{$a} = $b;
                 }
         }
 
@@ -110,25 +244,30 @@ sub yubikey_webclient
         $datastring = substr($datastring,0,length($datastring)-1);
 
 	# Check that nonce and OTP are the ones we asked for
-	return "ERR_MSG_AUTH" unless ($nonce eq $result{nonce} and $otp eq $result{otp});
+	$self->{status} = "ERR_MSG_AUTH";
 
-        my $hmac = encode_base64(hmac_sha1($datastring,decode_base64($api)));
+	return "ERR_MSG_AUTH" unless ($self->{nonce} eq $result{nonce} and $self->{otp} eq $result{otp});
+
+        my $hmac = encode_base64(hmac_sha1($datastring,decode_base64($self->{api})));
 
         chomp($hmac);
 
         if($hmac eq $signatur)
         {
+		$self->{publicid} = substr(lc($self->{otp}),0,12);
+		$self->{status} = "OK";
                 return "OK";
         }
         else
         {
+		$self->{status} = "ERR_HMAC";
                 return "ERR_HMAC";
         }
 }
 
 =head1 USAGE
 
-Before you can use this module, you need to register for an API key at Yubico.  This is as simple as logging onto <https://upgrade.yubico.com/getapikey/> and entering your Yubikey's OTP and a brief description.  Once you have the API and ID, you need to provide those details to the module to work.
+Before you can use this module, you need to register for an API key at Yubico.  This is as simple as logging onto <https://upgrade.yubico.com/getapikey/> and entering your Yubikey's OTP and your email address.  Once you have the API and ID, you need to provide those details to the module to work.
 
 =head1 AUTHOR
 

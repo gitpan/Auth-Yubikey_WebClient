@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               Auth-Yubikey_WebClient
-version:            2.01
+version:            3.00
 abstract:           Authenticating the Yubikey against the Yubico Web API
 author:
     - Phil Massyn <phil@massyn.net>
